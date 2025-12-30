@@ -30,7 +30,7 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 # 4b. Install NVCC (Required for compiling Mamba/FlashAttn)
 echo "Installing NVCC Compiler..."
-conda install -c nvidia cuda-nvcc -y
+conda install -c nvidia cuda-nvcc=12.4 -y
 export CUDA_HOME=$CONDA_PREFIX
 
 # ProFam Dependencies
