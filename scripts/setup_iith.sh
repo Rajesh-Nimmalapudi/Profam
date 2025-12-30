@@ -16,7 +16,7 @@ if conda info --envs | grep -q "profam-env"; then
     echo "Environment profam-env already exists."
 else
     echo "Creating conda environment 'profam-env'..."
-    conda create -n profam-env python=3.10 -y
+    conda create -n profam-env python=3.11 -y
 fi
 
 # 3. Activate
