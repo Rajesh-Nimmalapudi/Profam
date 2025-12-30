@@ -45,8 +45,8 @@ pip install lightning transformers hydra-core rootutils rich wandb pandas numpy 
 
 # 5. Install Mamba Kernels (Optimized for A100)
 echo "Installing Mamba Optimized Kernels (This takes ~10-15 mins. Please wait for the logs to scroll!)..."
-pip install causal-conv1d>=1.2.0 -v
-pip install mamba-ssm>=1.2.0 -v
+pip install causal-conv1d>=1.2.0 --no-cache-dir --force-reinstall -v --no-binary causal-conv1d
+pip install mamba-ssm>=1.2.0 --no-cache-dir --force-reinstall -v --no-binary mamba-ssm
 
 # 6. Install Flash Attention 2 (Essential for A100)
 echo "Installing Flash Attention 2 (This also takes time)..."
