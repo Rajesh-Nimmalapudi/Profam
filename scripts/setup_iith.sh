@@ -29,12 +29,23 @@ echo "Installing Dependencies..."
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # ProFam Dependencies
+pip install -r requirements.txt
 pip install lightning transformers hydra-core rootutils rich wandb pandas numpy
 
 # 5. Install Mamba Kernels (Optimized for A100)
 echo "Installing Mamba Optimized Kernels..."
 pip install causal-conv1d>=1.2.0
 pip install mamba-ssm>=1.2.0
+
+# 6. Install Flash Attention 2 (Essential for A100)
+echo "Installing Flash Attention 2..."
+pip install flash-attn --no-build-isolation
+
+# 7. Install Dev Requirements
+if [ -f "requirements-dev.txt" ]; then
+    echo "Installing Dev Requirements..."
+    pip install -r requirements-dev.txt
+fi
 
 echo "Environment Setup Complete!"
 echo "To activate: conda activate profam-env"
