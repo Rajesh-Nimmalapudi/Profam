@@ -30,12 +30,14 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 # 4b. Install NVCC & CUDA Tools (Required for compiling Mamba/FlashAttn)
 echo "Installing NVCC, Compilers, and CUDA Libraries..."
-# Install GCC (to fix system GCC incompatibility) and full CUDA headers (cccl)
-conda install -c nvidia -c conda-forge cuda-nvcc=12.4 cuda-cudart-dev=12.4 cuda-profiler-api=12.4 cuda-cccl=12.4 gxx_linux-64 -y
+# Install Compatible GCC (v11) and full CUDA headers
+conda install -c nvidia -c conda-forge cuda-nvcc=12.4 cuda-cudart-dev=12.4 cuda-profiler-api=12.4 cuda-cccl=12.4 gxx_linux-64=11.* -y
 export CUDA_HOME=$CONDA_PREFIX
-export CFLAGS="-I$CONDA_PREFIX/include $CFLAGS"
-export CPPFLAGS="-I$CONDA_PREFIX/include $CPPFLAGS"
-export CXXFLAGS="-I$CONDA_PREFIX/include $CXXFLAGS"
+export CFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include $CFLAGS"
+export CPPFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include $CPPFLAGS"
+export CXXFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include $CXXFLAGS"
+# Force NVCC to accept the compiler and find headers
+export NVCC_PREPEND_FLAGS='-allow-unsupported-compiler'
 
 # ProFam Dependencies
 pip install -r requirements.txt
