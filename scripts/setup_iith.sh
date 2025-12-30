@@ -33,15 +33,15 @@ echo "Installing NVCC, Compilers, and CUDA Libraries..."
 # Install Compatible GCC (v11) and full CUDA headers
 conda install -c nvidia -c conda-forge cuda-nvcc=12.4 cuda-cudart-dev=12.4 cuda-profiler-api=12.4 cuda-cccl=12.4 gxx_linux-64=11.* -y
 export CUDA_HOME=$CONDA_PREFIX
-export CFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include $CFLAGS"
-export CPPFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include $CPPFLAGS"
-export CXXFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include $CXXFLAGS"
+export CFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include -D_GLIBCXX_USE_CXX11_ABI=0 $CFLAGS"
+export CPPFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include -D_GLIBCXX_USE_CXX11_ABI=0 $CPPFLAGS"
+export CXXFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include -D_GLIBCXX_USE_CXX11_ABI=0 $CXXFLAGS"
 # Force NVCC to accept the compiler and find headers
 export NVCC_PREPEND_FLAGS='-allow-unsupported-compiler'
 
 # ProFam Dependencies
 pip install -r requirements.txt
-pip install lightning transformers hydra-core rootutils rich wandb pandas numpy
+pip install lightning transformers hydra-core rootutils rich wandb pandas numpy psutil
 
 # 5. Install Mamba Kernels (Optimized for A100)
 echo "Installing Mamba Optimized Kernels (This takes ~10-15 mins. Please wait for the logs to scroll!)..."
