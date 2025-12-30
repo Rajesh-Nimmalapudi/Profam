@@ -51,7 +51,7 @@ extras:
   print_config: true
 
 constants:
-  vocab_size: 68
+  vocab_size: 69
   gym_val_assay_list:
     - BLAT_ECOLX_Jacquier_2013
     - CALM1_HUMAN_Weile_2017

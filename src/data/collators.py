@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
+import torch
 from torch.utils.data import default_collate
 from transformers.data.data_collator import DefaultDataCollator, default_data_collator
 
@@ -403,10 +404,88 @@ class DocumentBatchCollator:
 
         if "batch_size" not in batch:
             batch["batch_size"] = len(combined_examples)
-        # if 'train' in examples[0]['ds_name']:
-        #     proportion_uniref_90 = sum(1 for ex in combined_examples if 'uniref90' in ex['ds_name']) / len(combined_examples)
-        #     proportion_funfam_50 = sum(1 for ex in combined_examples if 'funfam' in ex['ds_name']) / len(combined_examples)
-        #     print('buffer_len:', ring_buffer_len, batch['input_ids'].shape, 'uniref:', proportion_uniref_90, 'funfam:', proportion_funfam_50)
-        # elif 'val' in examples[0]['ds_name']:
-        #     print('val collate_buffer_len:', ring_buffer_len)
+        
+        # Generate segment_ids
+        # Rules: 
+        # 1. Start at 0 for each document (BOS token).
+        # 2. Increment after each SEP token.
+        # 3. Special tokens at start (BOS, DOC, FAM) are segment 0.
+        input_ids = batch["input_ids"]
+        sep_id = self.tokenizer.sep_token_id
+        bos_id = self.tokenizer.bos_token_id
+        
+        # We compute this row by row for simplicity, though it could be vectorized.
+        # batch["input_ids"] shape is (B, L)
+        segment_ids = torch.zeros_like(input_ids)
+        for i in range(input_ids.shape[0]):
+            row = input_ids[i]
+            # Find [SEP] tokens
+            sep_mask = (row == sep_id)
+            # Find [BOS] tokens to reset segments if needed (though usually BOS is at start)
+            bos_mask = (row == bos_id)
+            
+            # Sequence segments: everything between SEPs
+            # We want: 
+            # [BOS] [DOC] [FAM] SEQ1 [SEP] SEQ2 [SEP] 
+            # 0     0     0     1    1     2    2
+            # Actually, cumsum on sep_mask will give:
+            # 0     0     0     0    1     1    2
+            # This is almost what we want, but we want SEQ1 to be something else than the prefix.
+            # Let's shift it.
+            
+            seps_before = torch.cumsum(sep_mask.long(), dim=0)
+            # Shift so that tokens *after* the N-th SEP get id N+1
+            # and before the first SEP but after start tokens get id 1?
+            # Actually, let's just use the simplest: prefix is 0, each sequence gets its own ID.
+            
+            # Find first AA token or just first token after [FAM]
+            fam_id = getattr(self.tokenizer, "fam_token_id", None)
+            if fam_id is not None:
+                first_seq_mask = (torch.cumsum((row == fam_id).long(), dim=0) > 0)
+            else:
+                # fall back to some other heuristic if FAM is not there
+                first_seq_mask = torch.ones_like(row, dtype=torch.bool)
+            
+            row_segments = seps_before.clone()
+            
+            # Shift everything by 1 if it is part of the sequence content
+            # To make [BOS][DOC][FAM] = 0 and first seq = 1
+            # We only increment if we have seen FAM token and NOT seen the SEP that ends the current seq yet?
+            # Actually, seps_before already increments AT the SEP.
+            # So:
+            # [BOS] [DOC] [FAM] [SEQ1] [SEP] [SEQ2] [SEP]
+            # sep_mask: 0 0 0 0 1 0 1
+            # seps_before: 0 0 0 0 1 1 2
+            # We want:
+            # 0 0 0 1 1 2 2
+            
+            # Correct logic:
+            # segment_id = seps_before
+            # if token is not SEP and is after FAM, segment_id = seps_before + 1
+            
+            # Let's use a simpler version that's robust:
+            # 1. Start segments at 0.
+            # 2. Increment at every [SEP].
+            # This makes [BOS][DOC][FAM][SEQ1] all segment 0? 
+            # If we want SEQ1 to be different, we should start incrementing earlier.
+            
+            # Let's just follow the user's idea: "These tokens belong to the same sequence"
+            # So SEQ1 tokens should have same segment ID.
+            
+            # Implementation:
+            # segments = cumsum(sep_mask_shifted_right)
+            shifted_sep_mask = torch.cat([torch.tensor([0], device=row.device), sep_mask[:-1]], dim=0)
+            row_segments = torch.cumsum(shifted_sep_mask.long(), dim=0)
+            
+            # And reset at each BOS
+            if bos_mask.sum() > 1: # if packed
+                bos_indices = torch.where(bos_mask)[0]
+                for idx in bos_indices:
+                    # we need to subtract the value at bos to reset
+                    row_segments[idx:] -= row_segments[idx].clone()
+            
+            segment_ids[i] = row_segments
+            
+        batch["segment_ids"] = segment_ids
+
         return batch

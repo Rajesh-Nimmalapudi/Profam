@@ -48,10 +48,13 @@ def get_sequence_of_sequences(
     bos_token: Optional[str] = None,
     add_final_sep: bool = True,
     document_token: Optional[str] = "[RAW]",
+    fam_token: Optional[str] = None,
 ):
     concatenated_seqs = sep_token.join(proteins.sequences)
     if add_final_sep:
         concatenated_seqs += sep_token
+    if fam_token is not None:
+        concatenated_seqs = fam_token + concatenated_seqs
     if document_token is not None:
         concatenated_seqs = document_token + concatenated_seqs
     if bos_token is not None:
@@ -70,12 +73,14 @@ class ProFamTokenizer(PreTrainedTokenizerFast):
         *args,
         add_bos_token: bool = True,
         add_document_token: bool = True,
+        add_fam_token: bool = True,
         seq_struct_sep_token="|",
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.add_bos_token = add_bos_token
         self.add_document_token = add_document_token
+        self.add_fam_token = add_fam_token
         self.seq_struct_sep_token = seq_struct_sep_token
 
         if not self.additional_special_tokens:
@@ -98,7 +103,15 @@ class ProFamTokenizer(PreTrainedTokenizerFast):
 
     @property
     def num_start_tokens(self):
-        return int(self.add_bos_token) + int(self.add_document_token)
+        return int(self.add_bos_token) + int(self.add_document_token) + int(self.add_fam_token)
+
+    @property
+    def fam_token(self):
+        return "[FAM]"
+
+    @property
+    def fam_token_id(self):
+        return self.convert_tokens_to_ids(self.fam_token)
 
     def encode(
         self,
@@ -119,6 +132,7 @@ class ProFamTokenizer(PreTrainedTokenizerFast):
             bos_token=self.bos_token if self.add_bos_token else None,
             add_final_sep=add_final_sep,
             document_token=document_token,
+            fam_token=self.fam_token if self.add_fam_token else None,
         )
         num_end_tokens = int(add_final_sep)
         tokenized = self(

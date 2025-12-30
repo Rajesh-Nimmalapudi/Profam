@@ -1,0 +1,50 @@
+# @package _global_
+defaults:
+  - override /data: profam # Uses the full dataset mixture
+
+task_name: train_v2_hybrid_full_a100
+
+model:
+  _target_: src.models.hybrid.HybridLitModule
+  config:
+    _target_: src.models.hybrid.ProFamJambaConfig
+    vocab_size: 69
+    hidden_size: 1536 # Scaled up for A100
+    intermediate_size: 6144
+    num_attention_heads: 24
+    num_hidden_layers: 24
+    attn_layer_offset: 4
+    attn_layer_period: 8
+    num_experts: 1
+    num_experts_per_tok: 1
+    max_segments: 256
+    use_mamba_kernels: true # Set to true if kernels are installed on A100
+    attn_implementation: flash_attention_2
+    max_position_embeddings: 32768
+    gradient_checkpointing: true # Essential for long documents on A100
+  lr: 0.0004 # Lower learning rate for larger model scale
+
+trainer:
+  max_epochs: 10
+  accelerator: gpu
+  devices: 1 # Change to 8 for multi-GPU nodes
+  batch_size: 2
+  accumulate_grad_batches: 16 # Target large effective batch size
+  precision: bf16-true
+  strategy: auto
+
+callbacks:
+  summary_csv:
+    _target_: src.utils.callbacks.summary.SummaryCSVCallback
+    output_path: ${paths.root_dir}/ProFam_v2_A100_Pretraining.csv
+
+logger:
+  wandb:
+    _target_: lightning.pytorch.loggers.WandBLogger
+    project: ProFam-v2
+    name: ${task_name}
+    group: pretraining
+  csv:
+    _target_: lightning.pytorch.loggers.CSVLogger
+    save_dir: ${paths.output_dir}
+    name: v2_full_logs

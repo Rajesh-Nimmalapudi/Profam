@@ -1,0 +1,17 @@
+# @package _global_
+defaults:
+  - override /data: foldseek_50k
+
+# Run for a very short time to verify pipeline works
+trainer:
+  max_epochs: 1
+  limit_train_batches: 10
+  accelerator: gpu
+  devices: 1
+  check_val_every_n_epoch: null # Disable validation loop for speed
+  val_check_interval: null # Disable validation loop for speed
+  num_sanity_val_steps: 0
+
+
+# Disable wandb logging for this test run
+logger: null

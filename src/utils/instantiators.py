@@ -36,6 +36,8 @@ def instantiate_callbacks(
     # otherwise we can't control order.
     if extra_callbacks_cfg is not None:
         for _, cb_conf in extra_callbacks_cfg.items():
+            if cb_conf is None:
+                continue
             if isinstance(cb_conf, DictConfig) and "_target_" in cb_conf:
                 log.info(f"Instantiating callback <{cb_conf._target_}>")
                 callbacks.append(hydra.utils.instantiate(cb_conf, _convert_="partial"))
@@ -45,6 +47,8 @@ def instantiate_callbacks(
                 )
 
     for _, cb_conf in callbacks_cfg.items():
+        if cb_conf is None:
+            continue
         if isinstance(cb_conf, DictConfig) and "_target_" in cb_conf:
             log.info(f"Instantiating callback <{cb_conf._target_}>")
             callbacks.append(hydra.utils.instantiate(cb_conf))
@@ -72,6 +76,8 @@ def instantiate_loggers(logger_cfg: DictConfig) -> List[Logger]:
         raise TypeError("Logger config must be a DictConfig!")
 
     for _, lg_conf in logger_cfg.items():
+        if lg_conf is None:
+            continue
         if isinstance(lg_conf, DictConfig) and "_target_" in lg_conf:
             log.info(f"Instantiating logger <{lg_conf._target_}>")
             logger.append(hydra.utils.instantiate(lg_conf))

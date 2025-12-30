@@ -82,7 +82,7 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         cfg.get("callbacks"), extra_callbacks_cfg=cfg.get("extra_callbacks")
     )
 
-    if cfg.get("logger") and "wandb" in cfg.get("logger"):
+    if cfg.get("logger") and "wandb" in cfg.get("logger") and cfg.logger.wandb:
         with open_dict(cfg):
             if cfg.logger.wandb.get("name") is None:
                 num_params = sum(p.numel() for p in model.parameters())

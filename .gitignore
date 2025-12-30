@@ -62,3 +62,10 @@ model_checkpoints/
 data/train_example/*/*.idx.info
 data/train_example/*/*.idx.npy
 data/score_sequences_example/*_weights.npz
+data/raw/
+data/foldseek_s50/
+data/foldseek_small/
+data/openfold/
+data/ted/
+data/uniref90/
+

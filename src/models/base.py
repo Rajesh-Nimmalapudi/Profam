@@ -139,23 +139,38 @@ class BaseFamilyLitModule(LightningModule):
         )
 
     def compute_res_pos_in_doc(self, input_ids):
-        """Needs to start at 0 for compatibility with sequence packing:
-        https://github.com/huggingface/transformers/blob/70b07d97cf2c5f61fff55700b65528a1b6845cd2/src/transformers/modeling_flash_attention_utils.py#L133
+        """Needs to start at 0 for compatibility with sequence packing.
+        We now reset at both [BOS] (document start) and [SEP] (sequence start).
         """
         assert (
             input_ids.shape[0] == 1
         ), "Since we are typically packing sequences, we assume batch size is 1"
-        counter = torch.arange(input_ids.shape[1], device=input_ids.device)
-        document_indices = (
-            torch.cumsum(input_ids[0] == self.tokenizer.bos_token_id, 0) - 1
-        )
-        assert (
-            document_indices >= 0
-        ).all(), "Negative document indices encountered: check that bos token is first token in each document"
-        doc_starts = (
-            torch.argwhere(input_ids[0] == self.tokenizer.bos_token_id)
-        ).flatten()
-        offsets = counter[doc_starts][document_indices]
+        
+        row = input_ids[0]
+        counter = torch.arange(len(row), device=row.device)
+        
+        # We want to reset positions at both BOS and AFTER each SEP.
+        # Identification of start-of-sequence/start-of-document positions:
+        bos_id = self.tokenizer.bos_token_id
+        sep_id = self.tokenizer.sep_token_id
+        
+        # Any token that is either BOS or preceded by SEP is a position 0.
+        is_bos = (row == bos_id)
+        is_after_sep = torch.zeros_like(is_bos)
+        is_after_sep[1:] = (row[:-1] == sep_id)
+        
+        reset_mask = is_bos | is_after_sep
+        
+        # Indices of tokens that reset the counter
+        reset_indices = torch.where(reset_mask)[0]
+        
+        # For each token, find the most recent reset index
+        # This can be done with cumsum on the reset_mask
+        reset_count = torch.cumsum(reset_mask.long(), dim=0) - 1
+        
+        # Offsets are the counter values at the reset indices
+        offsets = counter[reset_indices][reset_count]
+        
         position_ids = (counter - offsets).unsqueeze(0)
         return position_ids
 
@@ -884,7 +899,7 @@ class BaseFamilyLitModule(LightningModule):
             self.log_dict(
                 {f"{step_name}/{k}": v for k, v in global_metrics.items()},
                 on_step=step_name == "train",
-                on_epoch=step_name != "train",
+                on_epoch=True,
                 prog_bar=True,
                 add_dataloader_idx=False,
                 sync_dist=step_name != "train",
