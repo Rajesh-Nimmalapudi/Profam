@@ -28,6 +28,11 @@ echo "Installing Dependencies..."
 # Assuming A100 supports CUDA 12.1 which is standard now
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
+# 4b. Install NVCC (Required for compiling Mamba/FlashAttn)
+echo "Installing NVCC Compiler..."
+conda install -c nvidia cuda-nvcc -y
+export CUDA_HOME=$CONDA_PREFIX
+
 # ProFam Dependencies
 pip install -r requirements.txt
 pip install lightning transformers hydra-core rootutils rich wandb pandas numpy
