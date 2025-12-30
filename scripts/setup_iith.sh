@@ -28,10 +28,14 @@ echo "Installing Dependencies..."
 # Assuming A100 supports CUDA 12.1 which is standard now
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
-# 4b. Install NVCC (Required for compiling Mamba/FlashAttn)
-echo "Installing NVCC Compiler..."
-conda install -c nvidia cuda-nvcc=12.4 -y
+# 4b. Install NVCC & CUDA Tools (Required for compiling Mamba/FlashAttn)
+echo "Installing NVCC and CUDA Libraries..."
+# We need the full toolkit + development headers
+conda install -c nvidia cuda-nvcc=12.4 cuda-cudart-dev=12.4 cuda-profiler-api=12.4 -y
 export CUDA_HOME=$CONDA_PREFIX
+export CFLAGS="-I$CONDA_PREFIX/include $CFLAGS"
+export CPPFLAGS="-I$CONDA_PREFIX/include $CPPFLAGS"
+export CXXFLAGS="-I$CONDA_PREFIX/include $CXXFLAGS"
 
 # ProFam Dependencies
 pip install -r requirements.txt
