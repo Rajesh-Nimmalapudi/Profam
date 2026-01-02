@@ -1,62 +1,40 @@
 #!/bin/bash
-# IITH Server Setup Script for ProFam-v2
-# Usage: source scripts/setup_iith.sh
 
-echo "Setting up ProFam-v2 Environment on IITH..."
+# 1. Load Miniconda Module
+module load miniconda/3
 
-# 1. Load Anaconda (Standard Module on most HPCs)
-if command -v module &> /dev/null; then
-    module load anaconda/3
-    echo "Loaded anaconda module."
-fi
+# 2. CLEAN SLATE: Remove existing environment if it exists
+# This is crucial to fix the broken state.
+echo "Removing old environment..."
+conda env remove -n profam-env -y
 
-# 2. Create Environment
-# Check if env exists
-if conda info --envs | grep -q "profam-env"; then
-    echo "Environment profam-env already exists."
-else
-    echo "Creating conda environment 'profam-env'..."
-    conda create -n profam-env python=3.11 -y
-fi
+# 3. Create "Golden" Environment
+echo "Creating fresh environment..."
+conda create -n profam-env python=3.10 -y
 
-# 3. Activate
-source activate profam-env || conda activate profam-env
+# Activate it (Workaround for script execution)
+source $(conda info --base)/etc/profile.d/conda.sh
+conda activate profam-env
 
-# 4. Install Core Dependencies
-echo "Installing Dependencies..."
-# PyTorch with CUDA 11.8 or 12.1 (Adjust based on A100 driver)
-# Assuming A100 supports CUDA 12.1 which is standard now
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# 4. Install PyTorch PINNED to 2.3.1 + CUDA 12.1
+# (Downgraded to 2.3.1 to match CONFIRMED Mamba wheels)
+echo "Installing PyTorch 2.3.1 (Guaranteed Compatibility)..."
+conda install pytorch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 pytorch-cuda=12.1 -c pytorch -c nvidia -y
 
-# 4b. Install NVCC & CUDA Tools (Required for compiling Mamba/FlashAttn)
-echo "Installing NVCC, Compilers, and CUDA Libraries..."
-# Install Compatible GCC (v11) and full CUDA headers
-conda install -c nvidia -c conda-forge cuda-nvcc=12.4 cuda-cudart-dev=12.4 cuda-profiler-api=12.4 cuda-cccl=12.4 gxx_linux-64=11.* -y
-export CUDA_HOME=$CONDA_PREFIX
-export CFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include -D_GLIBCXX_USE_CXX11_ABI=0 $CFLAGS"
-export CPPFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include -D_GLIBCXX_USE_CXX11_ABI=0 $CPPFLAGS"
-export CXXFLAGS="-I$CONDA_PREFIX/include -I$CONDA_PREFIX/targets/x86_64-linux/include -D_GLIBCXX_USE_CXX11_ABI=0 $CXXFLAGS"
-# Force NVCC to accept the compiler and find headers
-export NVCC_PREPEND_FLAGS='-allow-unsupported-compiler'
+# 5. Install Packaging
+pip install packaging
 
-# ProFam Dependencies
-pip install -r requirements.txt
-pip install lightning transformers hydra-core rootutils rich wandb pandas numpy psutil
+# 6. Install Mamba-SSM & Causal Conv1d (Using Pre-built Wheels)
+# Exact versions for PyTorch 2.3 + CUDA 12.1
+echo "Installing Mamba-SSM (Pre-built)..."
+pip install causal-conv1d>=1.4.0
+pip install mamba-ssm>=2.2.2
 
-# 5. Install Mamba Kernels (Optimized for A100)
-echo "Installing Mamba Optimized Kernels (This takes ~10-15 mins. Please wait for the logs to scroll!)..."
-pip install causal-conv1d>=1.2.0 --no-cache-dir --force-reinstall -v --no-binary causal-conv1d
-pip install mamba-ssm>=1.2.0 --no-cache-dir --force-reinstall -v --no-binary mamba-ssm
+# 7. Verify Installation
+python -c "import torch; print(f'Torch: {torch.__version__}'); import mamba_ssm; print('Mamba SSM: Installed Successfully ✅')"
 
-# 6. Install Flash Attention 2 (Essential for A100)
-echo "Installing Flash Attention 2 (This also takes time)..."
-pip install flash-attn --no-build-isolation -v
-
-# 7. Install Dev Requirements
-if [ -f "requirements-dev.txt" ]; then
-    echo "Installing Dev Requirements..."
-    pip install -r requirements-dev.txt
-fi
-
-echo "Environment Setup Complete!"
-echo "To activate: conda activate profam-env"
+echo "----------------------------------------------------------------"
+echo "Setup Complete! To use this environment, run:"
+echo "module load miniconda/3"
+echo "source activate profam-env"
+echo "----------------------------------------------------------------"

@@ -4,6 +4,7 @@ dataset_builders:
     _target_: src.data.builders.family_text_memmap_datasets.ProteinFamilyMemmapDataset
     name: openfold_train
     dataset_root: ${paths.data_dir}/OpenFold_OpenProteinSet/train
+    load_precomputed: ${load_precomputed}
     tokenizer: ${tokenizer}
     preprocessor:
       _target_: src.data.processors.ProteinDocumentPreprocessor
@@ -25,6 +26,7 @@ dataset_builders:
     _target_: src.data.builders.family_text_memmap_datasets.ProteinFamilyMemmapDataset
     name: ted_train
     dataset_root: ${paths.data_dir}/ted/ted_min20_max90_train
+    load_precomputed: ${load_precomputed}
     tokenizer: ${tokenizer}
     preprocessor:
       _target_: src.data.processors.ProteinDocumentPreprocessor
@@ -64,6 +66,7 @@ dataset_builders:
     _target_: src.data.builders.family_text_memmap_datasets.ProteinFamilyMemmapDataset
     name: foldseek_s50_train
     dataset_root: ${paths.data_dir}/foldseek_s50/train
+    load_precomputed: ${load_precomputed}
     tokenizer: ${tokenizer}
     seed: ${seed}
     preprocessor:
@@ -82,6 +85,7 @@ dataset_builders:
     _target_: src.data.builders.family_text_memmap_datasets.ProteinFamilyMemmapDataset
     name: foldseek_s50_val
     dataset_root: ${paths.data_dir}/foldseek_s50/val
+    load_precomputed: ${load_precomputed}
     tokenizer: ${tokenizer}
     seed: ${seed}
     max_families: 500
@@ -101,6 +105,7 @@ dataset_builders:
     _target_: src.data.builders.family_text_memmap_datasets.ProteinFamilyMemmapDataset
     name: uniref90_train
     dataset_root: ${paths.data_dir}/uniref90/train
+    load_precomputed: ${load_precomputed}
     tokenizer: ${tokenizer}
     preprocessor:
       _target_: src.data.processors.ProteinDocumentPreprocessor
@@ -118,6 +123,7 @@ dataset_builders:
     _target_: src.data.builders.family_text_memmap_datasets.ProteinFamilyMemmapDataset
     name: uniref90_val
     dataset_root: ${paths.data_dir}/uniref90/val
+    load_precomputed: ${load_precomputed}
     tokenizer: ${tokenizer}
     max_families: 500
     preprocessor:
@@ -151,3 +157,4 @@ prefetch_factor: 4
 shuffle: true
 interleaved: true
 interleaved_block_size: 1000
+load_precomputed: false
