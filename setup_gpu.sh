@@ -1,47 +1,50 @@
 #!/bin/bash
 # ============================================
-# GPU Node Setup Script (CUDA extensions)
+# GPU NODE SETUP (PYTORCH + MAMBA)
 # ============================================
 
 echo "============================================"
-echo " [GPU NODE] Installing CUDA extensions"
+echo " [GPU NODE] Installing PyTorch + Mamba"
 echo "============================================"
 
-# 1. Load Miniconda
 module load miniconda/3
-
-# 2. Activate environment
 source $(conda info --base)/etc/profile.d/conda.sh
 conda activate profam-env
 
-# 3. Sanity check: GPU visibility
-echo "Checking GPU availability..."
+# Install PyTorch via pip (CUDA 12.1 wheels)
+echo "Installing PyTorch 2.3.1 (pip, CUDA 12.1)..."
+pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 \
+  --index-url https://download.pytorch.org/whl/cu121
+
+# Verify torch BEFORE proceeding
+echo "Verifying PyTorch..."
 python - <<EOF
 import torch
 print("Torch version:", torch.__version__)
 print("CUDA available:", torch.cuda.is_available())
+assert torch.cuda.is_available(), "CUDA NOT AVAILABLE"
 EOF
 
-# 4. Install CUDA-native libraries (PRE-BUILT WHEELS)
+# Install CUDA extensions
 echo "Installing causal-conv1d..."
 pip install causal-conv1d==1.4.0
 
 echo "Installing mamba-ssm..."
 pip install mamba-ssm==2.2.2
 
-# 5. Final verification
-echo "Verifying Mamba installation..."
+# Final verification
+echo "Final verification..."
 python - <<EOF
 import torch
 import mamba_ssm
-print("Torch:", torch.__version__)
-print("CUDA available:", torch.cuda.is_available())
-print("Mamba-SSM import: SUCCESS ✅")
+print("Torch OK:", torch.cuda.is_available())
+print("Mamba-SSM OK ✅")
 EOF
 
-echo "------------------------------------------------"
+echo "--------------------------------------------"
 echo "GPU setup complete."
-echo "Environment profam-env is READY for training."
-echo "------------------------------------------------"
+echo "Environment profam-env is READY."
+echo "--------------------------------------------"
 
 conda deactivate
+

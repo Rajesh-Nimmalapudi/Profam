@@ -1,43 +1,39 @@
 #!/bin/bash
 # ============================================
-# Login Node Setup Script (CPU-safe only)
+# LOGIN NODE SETUP (NO PYTORCH)
 # ============================================
 
 echo "============================================"
-echo " [LOGIN NODE] Setting up profam-env"
+echo " [LOGIN NODE] Creating profam-env (CPU only)"
 echo "============================================"
 
-# 1. Load Miniconda module
 module load miniconda/3
 
-# 2. Remove old environment if exists
-echo "Removing old profam-env (if any)..."
+# Remove old env if exists
+echo "Removing old profam-env if present..."
 conda env remove -n profam-env -y >/dev/null 2>&1
 
-# 3. Create fresh environment (Python 3.10)
-echo "Creating new environment (Python 3.10)..."
+# Create fresh env
+echo "Creating environment with Python 3.10..."
 conda create -n profam-env python=3.10 -y
 
-# 4. Activate environment (script-safe)
+# Activate safely
 source $(conda info --base)/etc/profile.d/conda.sh
 conda activate profam-env
 
-# 5. Install PyTorch (CUDA runtime included, GPU not required here)
-echo "Installing PyTorch 2.3.1 + CUDA 12.1 runtime..."
-conda install pytorch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 \
-              pytorch-cuda=12.1 -c pytorch -c nvidia -y
-
-# 6. Install remaining CPU / Python dependencies
-echo "Installing Python dependencies from requirements.txt..."
+# Upgrade pip
 pip install --upgrade pip
+
+# Install CPU-only dependencies
+echo "Installing requirements.txt (NO torch)..."
 pip install -r requirements.txt
 
-# 7. Done
-echo "------------------------------------------------"
+echo "--------------------------------------------"
 echo "Login-node setup complete."
-echo "NEXT STEP:"
-echo "  1) Request a GPU node using srun"
-echo "  2) Run setup_gpu.sh inside that node"
-echo "------------------------------------------------"
+echo "NEXT:"
+echo "  srun --qos=normal --gres=gpu:1 --cpus-per-task=4 --mem=32G --pty bash"
+echo "  then run setup_gpu.sh"
+echo "--------------------------------------------"
 
 conda deactivate
+
