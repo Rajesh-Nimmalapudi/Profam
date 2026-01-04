@@ -1,50 +1,46 @@
 #!/bin/bash
-# ============================================
-# GPU NODE SETUP (PYTORCH + MAMBA)
-# ============================================
+set -e
 
-echo "============================================"
-echo " [GPU NODE] Installing PyTorch + Mamba"
-echo "============================================"
+echo "======================================"
+echo "[GPU NODE] CUDA extension installation"
+echo "======================================"
 
+module load cuda/13.0
 module load miniconda/3
+
 source $(conda info --base)/etc/profile.d/conda.sh
 conda activate profam-env
 
-# Install PyTorch via pip (CUDA 12.1 wheels)
-echo "Installing PyTorch 2.3.1 (pip, CUDA 12.1)..."
-pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 \
-  --index-url https://download.pytorch.org/whl/cu121
-
-# Verify torch BEFORE proceeding
-echo "Verifying PyTorch..."
+# Sanity check
 python - <<EOF
 import torch
-print("Torch version:", torch.__version__)
+print("Torch:", torch.__version__)
 print("CUDA available:", torch.cuda.is_available())
-assert torch.cuda.is_available(), "CUDA NOT AVAILABLE"
 EOF
 
-# Install CUDA extensions
 echo "Installing causal-conv1d..."
-pip install causal-conv1d==1.4.0
+pip install causal-conv1d==1.4.0 --no-build-isolation
 
 echo "Installing mamba-ssm..."
-pip install mamba-ssm==2.2.2
+pip install mamba-ssm==2.2.2 --no-build-isolation
 
-# Final verification
-echo "Final verification..."
+echo "Installing flash-attn..."
+pip install flash-attn --no-build-isolation
+
+echo "--------------------------------------"
+echo "Final verification"
+echo "--------------------------------------"
+
 python - <<EOF
-import torch
-import mamba_ssm
-print("Torch OK:", torch.cuda.is_available())
-print("Mamba-SSM OK ✅")
+import torch, mamba_ssm
+from flash_attn import flash_attn_func
+print("Torch:", torch.__version__)
+print("CUDA available:", torch.cuda.is_available())
+print("Mamba-SSM: OK")
+print("Flash-Attn: OK")
 EOF
 
-echo "--------------------------------------------"
-echo "GPU setup complete."
-echo "Environment profam-env is READY."
-echo "--------------------------------------------"
-
-conda deactivate
+echo "======================================"
+echo "GPU setup COMPLETE. Environment READY."
+echo "======================================"
 

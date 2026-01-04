@@ -1,39 +1,37 @@
 #!/bin/bash
-# ============================================
-# LOGIN NODE SETUP (NO PYTORCH)
-# ============================================
+set -e
 
-echo "============================================"
-echo " [LOGIN NODE] Creating profam-env (CPU only)"
-echo "============================================"
+echo "======================================"
+echo "[LOGIN NODE] Base environment setup"
+echo "======================================"
 
 module load miniconda/3
 
-# Remove old env if exists
-echo "Removing old profam-env if present..."
-conda env remove -n profam-env -y >/dev/null 2>&1
+# Clean old env if exists
+conda env remove -n profam-env -y || true
 
-# Create fresh env
-echo "Creating environment with Python 3.10..."
+# Create environment
 conda create -n profam-env python=3.10 -y
 
-# Activate safely
+# Activate
 source $(conda info --base)/etc/profile.d/conda.sh
 conda activate profam-env
 
 # Upgrade pip
-pip install --upgrade pip
+pip install --upgrade pip setuptools wheel
 
-# Install CPU-only dependencies
-echo "Installing requirements.txt (NO torch)..."
+# Install base requirements (NO CUDA EXTENSIONS HERE)
 pip install -r requirements.txt
 
-echo "--------------------------------------------"
-echo "Login-node setup complete."
-echo "NEXT:"
-echo "  srun --qos=normal --gres=gpu:1 --cpus-per-task=4 --mem=32G --pty bash"
-echo "  then run setup_gpu.sh"
-echo "--------------------------------------------"
+# Install PyTorch (pip wheels – HPC safe)
+pip install \
+  torch==2.3.1+cu121 \
+  torchvision==0.18.1+cu121 \
+  torchaudio==2.3.1+cu121 \
+  --index-url https://download.pytorch.org/whl/cu121
 
-conda deactivate
+echo "--------------------------------------"
+echo "LOGIN setup complete."
+echo "NEXT: request GPU node and run setup_gpu.sh"
+echo "--------------------------------------"
 
