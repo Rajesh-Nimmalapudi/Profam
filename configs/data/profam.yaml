@@ -1,9 +1,10 @@
 _target_: src.data.datamodule.ProteinDataMixture
 dataset_builders:
   openfold_train:
-    _target_: src.data.builders.family_text_memmap_datasets.ProteinFamilyMemmapDataset
+    # New Binary Token Store (HPC Optimized)
+    _target_: src.data.builders.binary_dataset.BinaryMemmapDataset
     name: openfold_train
-    dataset_root: ${paths.data_dir}/OpenFold_OpenProteinSet/train
+    data_dir: ${paths.data_dir}/processed
     load_precomputed: ${load_precomputed}
     tokenizer: ${tokenizer}
     preprocessor:
