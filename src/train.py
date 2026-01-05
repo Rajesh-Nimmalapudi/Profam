@@ -5,6 +5,17 @@ import hydra
 import lightning as L
 import rootutils
 import torch
+
+# ------------------------------------------------------------------------------------ #
+# [HPC COMPATIBILITY] Enforce Native SDPA (No FlashArgs needed)
+# This allows running on CUDA 13.0 without compiling flash-attn.
+# ------------------------------------------------------------------------------------ #
+if torch.cuda.is_available():
+    torch.backends.cuda.enable_flash_sdp(False)        # Disable external flash-attn
+    torch.backends.cuda.enable_mem_efficient_sdp(True) # Enable Triton/Cutlass (Fast)
+    torch.backends.cuda.enable_math_sdp(True)          # Enable Fallback (Safe)
+# ------------------------------------------------------------------------------------ #
+
 from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig, open_dict
