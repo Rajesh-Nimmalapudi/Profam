@@ -46,7 +46,38 @@ module load miniconda/3  # Or your cluster's equivalent
 source activate profam-env
 ```
 
-### B. Submit Training Job (SLURM)
+### B. [MANDATORY] Preprocess Data
+**Training will crash if you skip this step.** You must convert raw text `.sequences` into binary memory maps.
+
+Save as `submit_preprocess.sh` and run it *once*:
+```bash
+#!/bin/bash
+#SBATCH --job-name=ProFam_Preprocess
+#SBATCH --partition=cpu          # Use a high-memory CPU node
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=48       # Many cores for tokenization
+#SBATCH --time=24:00:00
+#SBATCH --output=logs/preprocess_%j.out
+
+source ~/.bashrc
+module load miniconda/3
+source activate profam-env
+cd /path/to/your/profam_exp/profam
+
+# 1. Clean old binaries (Optional: Be careful!)
+# rm -rf data/processed/* 
+
+# 2. Run Preprocessor
+# Uses 'preprocess_binary.py' to generate valid tokens.bin/offsets.bin
+python scripts/preprocess_binary.py \
+    --raw_dir data/raw \
+    --output_dir data/processed \
+    --tokenizer_file scripts/vocab.json \
+    --num_workers 48
+```
+Run with: `sbatch submit_preprocess.sh`. Wait for it to finish!
+
+### C. Submit Training Job (SLURM)
 Save the following as `submit_train.sh` in the repository root:
 
 ```bash
