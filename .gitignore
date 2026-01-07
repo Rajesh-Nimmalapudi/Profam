@@ -68,4 +68,6 @@ data/foldseek_small/
 data/openfold/
 data/ted/
 data/uniref90/
+data/processed_debug/
+data/raw_debug/
 

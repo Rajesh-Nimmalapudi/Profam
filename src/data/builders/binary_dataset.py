@@ -8,9 +8,11 @@ class BinaryMemmapDataset(Dataset):
     A Dataset backing a raw binary file of tokens (uint8) and an offsets file (int64).
     This implementation uses numpy.memmap for zero-copy access to massive datasets.
     """
-    def __init__(self, data_dir: str):
+    def __init__(self, data_dir: str, name: str = "binary_dataset", bos_token_id: int = 0):
         super().__init__()
         self.data_dir = data_dir
+        self.name = name
+        self.bos_token_id = bos_token_id
         
         tokens_path = os.path.join(data_dir, "tokens.bin")
         offsets_path = os.path.join(data_dir, "offsets.bin")
@@ -45,10 +47,14 @@ class BinaryMemmapDataset(Dataset):
         # .copy() ensures we have a real array not a view of the disk file
         token_ids = np.array(self.tokens_mmap[start_ptr:end_ptr], dtype=np.int64) # Convert to long for PyTorch embedding
         
+        # Ensure BOS token is present for packing
+        if len(token_ids) == 0 or token_ids[0] != self.bos_token_id:
+            token_ids = np.concatenate(([self.bos_token_id], token_ids))
+        
         return {
             "input_ids": torch.tensor(token_ids),
-            # "attention_mask" handled by collator usually
-            # "labels" usually same as input_ids for causal LM
+            "ds_name": self.name,
+            "identifier": f"{self.name}_{idx}"
         }
 
 # Example usage for debugging/testing

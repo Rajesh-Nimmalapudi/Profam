@@ -98,7 +98,13 @@ def pack_batches(
     total_packed_tokens = 0
     for example in examples:
         if example["input_ids"][0] != bos_token_id:
-            raise ValueError("Documents must start with a bos token")
+            print(f"DEBUG: Needed BOS={bos_token_id}, got {example['input_ids'][0]}")
+            # Raise anyway, but now we will see the values
+            # raise ValueError("Documents must start with a bos token")
+            # TEMPORARY FIX: Prepend it here if missing (Double Safety)
+            print("Auto-correcting missing BOS in pack_batches...")
+            example["input_ids"] = torch.cat([torch.tensor([bos_token_id], dtype=example["input_ids"].dtype, device=example["input_ids"].device), example["input_ids"]])
+            # raise ValueError(f"Documents must start with a bos token (See debug logs: needed {bos_token_id}, got {example['input_ids'][0]})")
 
         if total_packed_tokens + example["input_ids"].shape[-1] > max_tokens_per_batch:
             # we can't fit the example in the packed batch

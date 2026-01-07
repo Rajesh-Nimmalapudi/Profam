@@ -13,6 +13,11 @@ def process_file_chunk(file_path, tokenizer_path):
     Returns: (list_of_token_arrays, list_of_family_ids)
     """
     try:
+        # [FIX] Ensure worker process can see 'src' package
+        import sys
+        if os.getcwd() not in sys.path:
+            sys.path.append(os.getcwd())
+
         from src.data.tokenizers import ProFamTokenizer
         # Re-initialize tokenizer in worker (handles parallelism better)
         tokenizer = ProFamTokenizer(tokenizer_file=tokenizer_path, add_document_token=False, add_bos_token=False)
@@ -30,13 +35,13 @@ def process_file_chunk(file_path, tokenizer_path):
         if not sequences:
             return None
             
-        # Bulk encoding
-        encodings = tokenizer.encode_batch(sequences)
+        # Bulk encoding using standard HF call
+        encodings = tokenizer(sequences, add_special_tokens=False)
         
-        for enc in encodings:
+        for ids in encodings.input_ids:
             # Drop special tokens if needed, but ProFamTokenizer usually handles this.
             # Using uint8 to save space (Vocab size < 256)
-            token_arrays.append(np.array(enc.ids, dtype=np.uint8))
+            token_arrays.append(np.array(ids, dtype=np.uint8))
             
         return token_arrays
     except Exception as e:
@@ -78,20 +83,37 @@ def main():
         # Using int64 (8 bytes) for offsets because 137GB > 4GB
         f_offsets.write(np.int64(0).tobytes())
         
-        with ProcessPoolExecutor(max_workers=args.num_workers) as executor:
-            # Submit all tasks
-            futures = [executor.submit(process_file_chunk, f, args.tokenizer_file) for f in files]
+        if args.num_workers > 1:
+            with ProcessPoolExecutor(max_workers=args.num_workers) as executor:
+                # Submit all tasks
+                futures = [executor.submit(process_file_chunk, f, args.tokenizer_file) for f in files]
+                
+                for future in tqdm(futures, total=len(files), desc="Tokenizing to Bin"):
+                    result = future.result()
+                    if result:
+                        token_arrays = result
+                        for tokens in token_arrays:
+                            f_tokens.write(tokens.tobytes())
+                            current_offset += len(tokens)
+                            f_offsets.write(np.int64(current_offset).tobytes())
+        else:
+            # Sequential Debug Mode
+            print("Running in Sequential Mode (Debug)...")
+            tokenizer_path = args.tokenizer_file
             
-            for future in tqdm(futures, total=len(files), desc="Tokenizing to Bin"):
-                result = future.result()
+            # Pre-import to fail fast if module missing
+            import sys
+            if os.getcwd() not in sys.path:
+                 sys.path.append(os.getcwd())
+            from src.data.tokenizers import ProFamTokenizer
+            
+            for file_path in tqdm(files, total=len(files), desc="Tokenizing to Bin"):
+                # Call function directly (no pickling)
+                result = process_file_chunk(file_path, tokenizer_path)
                 if result:
                     token_arrays = result
-                    
                     for tokens in token_arrays:
-                        # 1. Write tokens bytes
                         f_tokens.write(tokens.tobytes())
-                        
-                        # 2. Update and write offset
                         current_offset += len(tokens)
                         f_offsets.write(np.int64(current_offset).tobytes())
                         

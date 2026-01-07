@@ -5,24 +5,6 @@ dataset_builders:
     _target_: src.data.builders.binary_dataset.BinaryMemmapDataset
     name: openfold_train
     data_dir: ${paths.data_dir}/processed
-    load_precomputed: ${load_precomputed}
-    tokenizer: ${tokenizer}
-    preprocessor:
-      _target_: src.data.processors.ProteinDocumentPreprocessor
-      cfg:
-        _target_: src.data.processors.AlignedProteinPreprocessingConfig
-        document_token: '[RAW]'
-        drop_first_protein: false
-        keep_first_protein: false
-        allow_unk: false
-        max_tokens_per_example: 8192
-        shuffle_proteins_in_document: true
-        padding: do_not_pad
-        keep_gaps: false
-        keep_insertions: true
-        to_upper: true
-        use_msa_pos: false
-      transform_fns: null
   ted_train:
     _target_: src.data.builders.family_text_memmap_datasets.ProteinFamilyMemmapDataset
     name: ted_train
@@ -158,4 +140,3 @@ prefetch_factor: 4
 shuffle: true
 interleaved: true
 interleaved_block_size: 1000
-load_precomputed: false

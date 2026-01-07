@@ -1,0 +1,39 @@
+# @package _global_
+defaults:
+  - pretrain_v2_full_a100
+  - override /data: debug_binary
+
+task_name: debug_run
+
+# ------------------------------------------------------------------------------------ #
+# [DEBUG MODE] Faster verification on Local GPU
+# ------------------------------------------------------------------------------------ #
+trainer:
+  max_epochs: 1
+  limit_train_batches: 50  # Only run 50 steps to verify stability
+  limit_val_batches: 5
+  accelerator: gpu
+  devices: 1
+  batch_size: 1            # Reduced to 1 to fit large model on 3090
+  accumulate_grad_batches: 2
+  precision: bf16-true     # Ensure bf16 is supported (RTX 3090 supports it)
+  val_check_interval: 25   # Must be < limit_train_batches (50)
+
+data:
+  num_workers: 0           # Avoid multiprocessing overhead/bugs in debug
+
+model:
+  config:
+    hidden_size: 768       # Reduced from 1536 for debug
+    intermediate_size: 3072
+    num_hidden_layers: 12  # Reduced from 24
+    num_attention_heads: 12
+    num_key_value_heads: 12 # Explicitly set to match attention heads (Disable GQA for debug)
+
+
+logger:
+  csv:
+    _target_: lightning.pytorch.loggers.CSVLogger
+    save_dir: ${paths.output_dir}
+    name: debug_logs
+  wandb: null              # Disable WandB for local debug to avoid auth issues if offline

@@ -180,6 +180,12 @@ def accuracy_from_outputs(
 def sequence_lengths(labels, sep_token_id):
     sep_mask = labels == sep_token_id
     positions = torch.where(sep_mask)[1]
+    if len(positions) == 0:
+        return {
+            "min_seq_length": 0.0,
+            "max_seq_length": 0.0,
+            "mean_seq_length": 0.0,
+        }
     sequence_lengths = torch.cat([positions[0].unsqueeze(0), positions.diff(dim=-1)])
     result = {
         "min_seq_length": sequence_lengths.min().item(),
