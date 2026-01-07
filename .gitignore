@@ -70,4 +70,6 @@ data/ted/
 data/uniref90/
 data/processed_debug/
 data/raw_debug/
-
+scripts/data/
+data/processed/
+submit_preprocess.sh
