@@ -42,6 +42,7 @@ We have significantly overhauled the architecture and pipeline to support **Long
 ### A. Environment Setup
 Refer to `scripts/setup_iith.sh` for the exact module commands.
 ```bash
+module load cuda/13.0    # Required for Mamba kernels
 module load miniconda/3  # Or your cluster's equivalent
 source activate profam-env
 ```
@@ -60,6 +61,7 @@ Save as `submit_preprocess.sh` and run it *once*:
 #SBATCH --output=logs/preprocess_%j.out
 
 source ~/.bashrc
+module load cuda/13.0    # Load CUDA runtime libraries
 module load miniconda/3
 source activate profam-env
 cd /path/to/your/profam_exp/profam
@@ -70,9 +72,9 @@ cd /path/to/your/profam_exp/profam
 # 2. Run Preprocessor
 # Uses 'preprocess_binary.py' to generate valid tokens.bin/offsets.bin
 python scripts/preprocess_binary.py \
-    --raw_dir data/raw \
+    --raw_dir scripts/data/raw \
     --output_dir data/processed \
-    --tokenizer_file scripts/vocab.json \
+    --tokenizer_file data/profam_tokenizer.json \
     --num_workers 48
 ```
 Run with: `sbatch submit_preprocess.sh`. Wait for it to finish!
@@ -92,6 +94,7 @@ Save the following as `submit_train.sh` in the repository root:
 
 # 1. Load Modules
 source ~/.bashrc
+module load cuda/13.0    # Required for Mamba kernels!
 module load miniconda/3
 source activate profam-env
 
